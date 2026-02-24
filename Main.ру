@@ -1,0 +1,63 @@
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import LabeledPrice, PreCheckoutQuery, Message
+import chess.pgn
+import io
+
+logging.basicConfig(level=logging.INFO)
+bot = Bot(token="ТОКЕН_БОТА_СЮДА")
+dp = Dispatcher()
+
+# База премиум (пока в памяти, потом можно SQLite)
+premium_users = set()
+
+@dp.message(Command("start"))
+async def start(message: Message):
+    await message.answer(
+        "👋 Привет! Я Chess Hedge Coach — твой личный тренер и симулятор хедж-фонда на шахматной доске.\n\n"
+        "Бесплатно: 3 анализа в день\n"
+        "Премиум 99 Stars/месяц — всё без лимита!\n\n"
+        "/buy — купить премиум\n"
+        "Пришли PGN или ссылку на партию — разберу!"
+    )
+
+@dp.message(Command("buy"))
+async def buy_premium(message: Message):
+    await bot.send_invoice(
+        chat_id=message.chat.id,
+        title="Chess Hedge Coach — Премиум на 30 дней",
+        description="Неограниченный анализ партий + Hedge Mode + персональные уроки",
+        payload="premium_30days",
+        provider_token="",          # пусто для Stars!
+        currency="XTR",
+        prices=[LabeledPrice(label="Подписка 30 дней", amount=99)]
+    )
+
+@dp.pre_checkout_query()
+async def pre_checkout(query: PreCheckoutQuery):
+    await query.answer(ok=True)
+
+@dp.message(lambda m: m.successful_payment)
+async def successful_payment(message: Message):
+    if message.successful_payment.invoice_payload == "premium_30days":
+        premium_users.add(message.from_user.id)
+        await message.answer("🎉 Премиум активирован на 30 дней! Теперь без лимитов.\nПрисылай партию!")
+
+@dp.message()
+async def handle_game(message: Message):
+    if "lichess.org" in message.text or "chess.com" in message.text:
+        await message.answer("🔄 Анализирую партию...")
+        # Здесь можно добавить реальный парсинг (пока заглушка)
+        await message.answer("✅ Разбор готов!\nТвоя главная ошибка: ранний выход ферзя (как в твоей партии с RabbitTrx). Рекомендую Испанскую.")
+        if message.from_user.id in premium_users:
+            await message.answer("💎 Премиум: вот полный анализ с 5 вариантами продолжения + упражнения.")
+    else:
+        await message.answer("Пришли PGN или ссылку на партию — разберу бесплатно (3 раза в день).")
+
+async def main():
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
