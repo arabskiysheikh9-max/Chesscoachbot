@@ -7,7 +7,8 @@ import chess.pgn
 import io
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token="ТОКЕН_БОТА_СЮДА")
+bot = Bot(token="8576808559:AAGK8xEvQsyjkRcQXXZbYTNaOp_fiN-b8js
+")
 dp = Dispatcher()
 
 # База премиум (пока в памяти, потом можно SQLite)
